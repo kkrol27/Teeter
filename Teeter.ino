@@ -1,6 +1,7 @@
 
 // #include "motor.hpp"
 #include "LSM6.h"
+#include "LIS3MDL.h"
 
 #define DEBUG
 
@@ -12,6 +13,7 @@ int ds;
 */
 
 LSM6 imu;
+LIS3MDL mag;
 
 void setup() {
 
@@ -24,13 +26,20 @@ void setup() {
 */
   imu.init();
   imu.enableDefault();
+  if(!mag.init()) {
+    Serial.println("mag.init fail");
+    while(1);
+  }
+  mag.enableDefault();
 }
 
 void loop() {
-  imu.read();
+  //imu.read();
+  mag.read();
 #ifdef DEBUG
-  Serial.println("acc = " + String(imu.a.x) + "," + String(imu.a.y) + "," + String(imu.a.z));
-  Serial.println("gyr = " + String(imu.g.x) + "," + String(imu.g.y) + "," + String(imu.g.z));
+  //Serial.println("acc = " + String(imu.a.x) + "," + String(imu.a.y) + "," + String(imu.a.z));
+  //Serial.println("gyr = " + String(imu.g.x) + "," + String(imu.g.y) + "," + String(imu.g.z));
+  Serial.println("gyr = " + String(mag.m.x) + "," + String(mag.m.y) + "," + String(mag.m.z));
 #endif
 /*
   delay(500);
