@@ -4,7 +4,7 @@
 #include "LSM6.h"
 #include "LIS3MDL.h"
 
-#define DEBUG
+// #define DEBUG
 
 dev::Motor r_motor(34, 35, 36);
 dev::Motor l_motor(39, 38, 37);
@@ -23,7 +23,9 @@ void setup() {
   l_motor.init();
   bool f = imu.init();
   if(!mag.init() || !f) {
+#ifdef DEBUG
     Serial.println("init fail");
+#endif
     pinMode(13, OUTPUT);
     while(1) {
       digitalWrite(13, HIGH);
