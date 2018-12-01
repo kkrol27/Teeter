@@ -22,12 +22,18 @@ void setup() {
   r_motor.init();
   l_motor.init();
 */
-  imu.init();
+  if (!imu.init()){
+    Serial.println("imu.init fail");
+    while(1){
+      ;
+    }
+  }
   imu.enableDefault();
 }
 
 void loop() {
   imu.read();
+  delay(1000);
 #ifdef DEBUG
   Serial.println("acc = " + String(imu.a.x) + "," + String(imu.a.y) + "," + String(imu.a.z));
   Serial.println("gyr = " + String(imu.g.x) + "," + String(imu.g.y) + "," + String(imu.g.z));
@@ -40,5 +46,5 @@ void loop() {
   if (speed <= -255) ds = 5;
   speed = speed + ds;
 */
-  delay(1000);
+
 }
