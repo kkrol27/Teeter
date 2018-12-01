@@ -24,7 +24,13 @@ void setup() {
   bool f = imu.init();
   if(!mag.init() || !f) {
     Serial.println("init fail");
-    while(1);
+    pinMode(13, OUTPUT);
+    while(1) {
+      digitalWrite(13, HIGH);
+      delay(500);
+      digitalWrite(13, LOW);
+      delay(500);
+    }
   }
   imu.enableDefault();
   mag.enableDefault();
