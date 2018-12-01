@@ -6,8 +6,8 @@
 
 #define DEBUG
 
-dev::Motor r_motor(0, 1, 2);
-dev::Motor l_motor(11, 12, 10);
+dev::Motor r_motor(34, 35, 36);
+dev::Motor l_motor(39, 38, 37);
 int speed = -255;
 int ds;
 
