@@ -4,6 +4,8 @@
 #include "imu.hpp"
 #include <math.h>
 
+#define DEBUG
+
 dev::Motor r_motor(34, 35, 36);
 dev::Motor l_motor(39, 38, 37);
 int speed = 0;
@@ -15,13 +17,19 @@ struct AngVelAcc angVelAcc = {180.0f, 0.0f, 0.0f};
 
 float prevVel = 0;
 
-float const COMP_C = 0.8f;
+// Complimentary filter constant
+float const COMP_C = 0.96f;
 
-static float const SCALE = 2.0f;
+// PID Controller values
+static float const SCALE = 4.0f;
 static float const KI = SCALE * 15.0f;
 static float const KP = SCALE * 0.0f;
 static float const KD = SCALE * 0.026f;
+
+// Set point for equilibrium
 static float const setPoint = 178.0f;
+
+// Controller loop delay
 static long const DELAY = 50;
 
 inline float i_func(float ang) {
@@ -30,6 +38,9 @@ inline float i_func(float ang) {
 }
 
 void setup() {
+#ifdef DEBUG
+  Serial.begin(9600);
+#endif
   r_motor.init();
   l_motor.init();
   if (!init_imu()) {
@@ -96,6 +107,7 @@ void loop() {
   timestamp = millis();
   oldspeed = speed;
   newspeed = (int) torqueMotor(imu_a.a, imu_g.x, dt);
+  /*
   if (newspeed > 0) {
     if (oldspeed < 0 && newspeed >= 60) {
       r_motor.set_speed(170);
@@ -111,9 +123,12 @@ void loop() {
       delay(1);
     }
     speed = (newspeed <= -60 ? newspeed : 0);
-  }
+  }*/
+  speed = newspeed;
   r_motor.set_speed(speed);
   l_motor.set_speed(speed);
-  
+ #ifdef DEBUG
+  Serial.println(newspeed);
+ #endif
   delay(DELAY);
 }
