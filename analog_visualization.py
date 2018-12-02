@@ -73,7 +73,7 @@ def run(niter=1000, doblit=True):
             fig.canvas.draw()
 
     plt.close(fig)
-    print ("Blit = %s, average FPS: %.2f" % (
+    print("Blit = %s, average FPS: %.2f" % (
         str(doblit), niter / (time.time() - tic)))
 
 
