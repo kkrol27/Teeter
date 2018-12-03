@@ -6,129 +6,83 @@
 
 #define DEBUG
 
+// Motor devices and state variables
 dev::Motor r_motor(34, 35, 36);
 dev::Motor l_motor(39, 38, 37);
-int speed = 0;
-int oldspeed = 0;
-long timestamp = 0;
 
-struct AngVelAcc {float ang; float vel; float acc;};
-struct AngVelAcc angVelAcc = {180.0f, 0.0f, 0.0f};
+// Controller timestamp variable
+unsigned long timestamp;
 
-float prevVel = 0;
-
-// Complimentary filter constant
-float const COMP_C = 0.96f;
-
-// PID Controller values
-static float const SCALE = 4.0f;
-static float const KI = SCALE * 15.0f;
-static float const KP = SCALE * 0.0f;
-static float const KD = SCALE * 0.026f;
-
-// Set point for equilibrium
-static float const setPoint = 178.0f;
-
-// Controller loop delay
-static long const DELAY = 50;
-
-inline float i_func(float ang) {
-  return ang;
-  //return (ang < 0.0f ? -ang * ang : ang * ang);
+/** Signals the device encountered an error. **/
+void error() {
+  pinMode(13, OUTPUT);
+    while(1) {
+      digitalWrite(13, HIGH);
+      delay(500);
+      digitalWrite(13, LOW);
+      delay(500);
+    }
 }
 
 void setup() {
 #ifdef DEBUG
   Serial.begin(9600);
 #endif
+  // Initiate motors and sensors
   r_motor.init();
   l_motor.init();
-  if (!init_imu()) {
-    pinMode(13, OUTPUT);
-    while(1) {
-      digitalWrite(13, HIGH);
-      delay(500);
-      digitalWrite(13, LOW);
-      delay(500);
-    }
-  }
-  read_imu();
+  if (!init_imu()) error();
+  // Initial timestamp value
   timestamp = millis();
-  angVelAcc.vel = imu_g.x;  
 }
 
-void CompFilter(float accelData[3], float gyroVel, float dt) {
-  
-  float accelAngle;
- 
-  // Integrate gyroscope data
-  angVelAcc.ang += gyroVel*dt;
-  if (abs(angVelAcc.ang - 180.0f) >= 80.0f) { // robot fell over
-    r_motor.set_speed(0);
-    l_motor.set_speed(0);
-    pinMode(13, OUTPUT);
-    while(1) {
-      digitalWrite(13, HIGH);
-      delay(2000);
-      digitalWrite(13, LOW);
-      delay(2000);
-    }
-  }
-  else {
-    // Compensate for drift with accelerometer data
-    // Turning around the X axis results in a vector on the Z-axis
-    accelAngle = 90.0f + atan2f(accelData[1], accelData[2])*180.0f/PI;
-    angVelAcc.ang = angVelAcc.ang * COMP_C + accelAngle * (1 - COMP_C);
-    angVelAcc.vel = gyroVel;
-    angVelAcc.acc = (gyroVel - prevVel) / dt;
-  }
-
-  prevVel = gyroVel;
-} 
-
-float torqueMotor(float accelData[3], float gyroVel, float dt) {
-  // take in the current theta and velocity values and, based on those, 
-  // tell the motor how much torque (speed) to apply to wheels to stabilize
-  // the robot
-
-  float s;
-
-  CompFilter(accelData, gyroVel, dt);
-
-  s = KI*i_func(angVelAcc.ang - setPoint) + KP*angVelAcc.vel + KD*angVelAcc.acc;
-
-  return s;
+/** Calculates the new theta following the complimentary filter. **/
+float comp_filter(float ang, float gyr_z, float dt, float axl_y, float axl_z) {
+  static const float c = 0.99f;
+  // Complimentary filter determination
+  float axl_ang = 90.0f + atan2f(axl_y, axl_z) * 180.0f / PI;
+  return (ang + gyr_z * dt) * c + axl_ang * (1.0f - c);
 }
+
+// Controller state variables
+float i_theta = 0.0f;
+float p_theta = 180.0f;
+float d_theta = 0.0f;
+
+#ifdef DEBUG
+unsigned long debug = 0;
+#endif
 
 void loop() {
-  float dt; int newspeed;
+  static const float eq_theta = 176.6f;
+  static const float K_I = 0.0f;
+  static const float K_P = 45.0f;
+  static const float K_D = 0.0f;
+  static const unsigned long loop_delay = 1;
+  // Read IMU sensors, calculate dt, and timestamp the reading
   read_imu();
-  dt = ((float)(millis() - timestamp)) / 1000.0f;
+  float dt = ((float)(millis() - timestamp)) / 1000.0f;
   timestamp = millis();
-  oldspeed = speed;
-  newspeed = (int) torqueMotor(imu_a.a, imu_g.x, dt);
-  /*
-  if (newspeed > 0) {
-    if (oldspeed < 0 && newspeed >= 60) {
-      r_motor.set_speed(170);
-      l_motor.set_speed(170);
-      delay(1);
-    }
-    speed = (newspeed >= 60 ? newspeed : 0);
+  // Update controller state variables
+  i_theta += (p_theta - eq_theta) * dt;
+  float theta = comp_filter(p_theta, imu_g.z, dt, imu_a.y, imu_a.z);
+  d_theta = (theta - p_theta) / dt;
+  p_theta = theta;
+  // Check if robot fell over
+  if (abs(p_theta - eq_theta) > 80.0f) {
+    r_motor.set_speed(0);
+    l_motor.set_speed(0);
+    error();
   }
-  else {
-    if (oldspeed > 0 && newspeed <= -60) {
-      r_motor.set_speed(-170);
-      l_motor.set_speed(-170);
-      delay(1);
-    }
-    speed = (newspeed <= -60 ? newspeed : 0);
-  }*/
-  speed = newspeed;
-  r_motor.set_speed(speed);
-  l_motor.set_speed(speed);
- #ifdef DEBUG
-  Serial.println(newspeed);
- #endif
-  delay(DELAY);
+  // Determine controller output
+  float ctrl = K_I * i_theta + K_P * (p_theta - eq_theta) + K_D * d_theta;
+  r_motor.set_speed((int) ctrl);
+  l_motor.set_speed((int) ctrl);
+  delay(loop_delay);
+#ifdef DEBUG
+  if(debug++ % 15 == 0) {
+    Serial.print(String(i_theta) + "," + String(p_theta) + "," + String(d_theta));
+    Serial.println("," + String(ctrl));
+  }
+#endif
 }
