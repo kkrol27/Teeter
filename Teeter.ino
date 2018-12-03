@@ -1,4 +1,3 @@
-
 #include <Wire.h>
 #include "motor.hpp"
 #include "imu.hpp"
