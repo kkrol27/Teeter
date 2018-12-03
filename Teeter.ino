@@ -1,3 +1,4 @@
+
 #include <Wire.h>
 #include "motor.hpp"
 #include "imu.hpp"
@@ -37,10 +38,10 @@ void setup() {
 
 /** Calculates the new theta following the complimentary filter. **/
 float comp_filter(float ang, float gyr_x, float dt, float axl_y, float axl_z) {
-  static const float c = 0.99f;
+  static const float c = 0.98f;
   // Complimentary filter determination
   float axl_ang = 90.0f + atan2f(-axl_y, axl_z) * 180.0f / PI;
-  return (ang + gyr_x * dt) * c + axl_ang * (1.0f - c);
+  return (ang - gyr_x * dt) * c + axl_ang * (1.0f - c);
 }
 
 // Controller state variables
@@ -53,11 +54,11 @@ unsigned long debug = 0;
 #endif
 
 void loop() {
-  static const float eq_theta = 176.6f;
+  static const float eq_theta = 179.3f;
   static const float K_I = 0.0f;
-  static const float K_P = 45.0f;
+  static const float K_P = 65.0f;
   static const float K_D = 0.0f;
-  static const unsigned long loop_delay = 1;
+  static const unsigned long loop_delay = 3;
   // Read IMU sensors, calculate dt, and timestamp the reading
   read_imu();
   float dt = ((float)(millis() - timestamp)) / 1000.0f;

@@ -35,8 +35,8 @@ struct vector<float> const axl_off = {
 };
 
 // Exponential filter weights
-float const gyr_w = 0.10f;
-float const axl_w = 0.10f;
+float const gyr_w = 0.01f;
+float const axl_w = 0.01f;
 
 void read_imu() {
   imu.read();
