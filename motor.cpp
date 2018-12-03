@@ -34,6 +34,5 @@ void Motor::set_speed(int speed) {
   // Write pwm value
   analogWrite(s_pin, (speed > 254 ? 255 : speed));
 }
-
 }  // namespace motor_1_0
 }  // namespace dev

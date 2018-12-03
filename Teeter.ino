@@ -1,8 +1,9 @@
 
-#include <Wire.h>
-#include "motor.hpp"
-#include "imu.hpp"
 #include <math.h>
+#include <Wire.h>
+
+#include "imu.hpp"
+#include "motor.hpp"
 
 #define DEBUG
 
@@ -39,7 +40,7 @@ void setup() {
 /** Calculates the new theta following the complimentary filter. **/
 float comp_filter(float ang, float gyr_x, float dt, float axl_y, float axl_z) {
   static const float c = 0.98f;
-  // Complimentary filter determination
+  // Complimentary filter calculation
   float axl_ang = 90.0f + atan2f(axl_y, axl_z) * 180.0f / PI;
   return (ang + gyr_x * dt) * c + axl_ang * (1.0f - c);
 }
@@ -54,22 +55,22 @@ unsigned long debug = 0;
 #endif
 
 void loop() {
-  static const float eq_theta = 179.3f;
-  static const float K_I = 0.0f;
-  static const float K_P = 65.0f;
+  static const float eq_theta = 179.6f;
+  static const float K_I = 7.5f;
+  static const float K_P = 35.0f;
   static const float K_D = 0.0f;
-  static const unsigned long loop_delay = 3;
+  static const unsigned long loop_delay = 10;
   // Read IMU sensors, calculate dt, and timestamp the reading
   read_imu();
   float dt = ((float)(millis() - timestamp)) / 1000.0f;
   timestamp = millis();
   // Update controller state variables
   i_theta += (p_theta - eq_theta) * dt;
-  float theta = comp_filter(p_theta, imu_g.x, dt, imu_a.y, imu_a.z);
+  float theta = comp_filter(p_theta, imu_g.x, dt, imu_a.z, -imu_a.y); // Adjusted for new configuration
   d_theta = (theta - p_theta) / dt;
   p_theta = theta;
   // Check if robot fell over
-  if (abs(p_theta - eq_theta) > 80.0f) {
+  if (abs(p_theta - eq_theta) > 11.0f) {
     r_motor.set_speed(0);
     l_motor.set_speed(0);
     error();
@@ -78,6 +79,7 @@ void loop() {
   float ctrl = K_I * i_theta + K_P * (p_theta - eq_theta) + K_D * d_theta;
   r_motor.set_speed((int) ctrl);
   l_motor.set_speed((int) ctrl);
+  // Loop delay
   delay(loop_delay);
 #ifdef DEBUG
   if(debug++ % 15 == 0) {

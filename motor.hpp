@@ -30,7 +30,6 @@ class Motor {
   // Speed H bridge PWM input pin
   unsigned int const s_pin;
 };
-
 }  // namespace motor_1_0
 }  // namespace dev
 
