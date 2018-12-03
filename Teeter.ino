@@ -40,8 +40,8 @@ void setup() {
 float comp_filter(float ang, float gyr_x, float dt, float axl_y, float axl_z) {
   static const float c = 0.98f;
   // Complimentary filter determination
-  float axl_ang = 90.0f + atan2f(-axl_y, axl_z) * 180.0f / PI;
-  return (ang - gyr_x * dt) * c + axl_ang * (1.0f - c);
+  float axl_ang = 90.0f + atan2f(axl_y, axl_z) * 180.0f / PI;
+  return (ang + gyr_x * dt) * c + axl_ang * (1.0f - c);
 }
 
 // Controller state variables
