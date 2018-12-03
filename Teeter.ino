@@ -36,11 +36,11 @@ void setup() {
 }
 
 /** Calculates the new theta following the complimentary filter. **/
-float comp_filter(float ang, float gyr_z, float dt, float axl_y, float axl_z) {
+float comp_filter(float ang, float gyr_x, float dt, float axl_y, float axl_z) {
   static const float c = 0.99f;
   // Complimentary filter determination
-  float axl_ang = 90.0f + atan2f(axl_y, axl_z) * 180.0f / PI;
-  return (ang + gyr_z * dt) * c + axl_ang * (1.0f - c);
+  float axl_ang = 90.0f + atan2f(-axl_y, axl_z) * 180.0f / PI;
+  return (ang + gyr_x * dt) * c + axl_ang * (1.0f - c);
 }
 
 // Controller state variables
@@ -64,7 +64,7 @@ void loop() {
   timestamp = millis();
   // Update controller state variables
   i_theta += (p_theta - eq_theta) * dt;
-  float theta = comp_filter(p_theta, imu_g.z, dt, imu_a.y, imu_a.z);
+  float theta = comp_filter(p_theta, imu_g.x, dt, imu_a.y, imu_a.z);
   d_theta = (theta - p_theta) / dt;
   p_theta = theta;
   // Check if robot fell over
