@@ -35,8 +35,8 @@ struct vector<float> const axl_off = {
 };
 
 // Exponential filter weights
-float const gyr_w = 0.01f;
-float const axl_w = 0.01f;
+float const gyr_w = 0.05f;
+float const axl_w = 0.30f; // Low pass the axl b/c of jitter
 
 void read_imu() {
   imu.read();
